@@ -23,7 +23,7 @@ class RoombahEnvCfg(DirectRLEnvCfg):
     robot_cfg: ArticulationCfg = JETBOT_CONFIG.replace(prim_path="/World/envs/env_.*/Robot")
 
     # scene
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=100, env_spacing=4.0, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=16, env_spacing=4.0, replicate_physics=True)
 
     # custom parameters/scales
     dof_names = ["left_wheel_joint", "right_wheel_joint"]
