@@ -1,4 +1,5 @@
 from roombah.robots.jetbot import JETBOT_CONFIG
+from roombah.robots.turtle import TURTLEBOT4_CFG
 
 from isaaclab.assets import ArticulationCfg
 from isaaclab.envs import DirectRLEnvCfg
@@ -20,7 +21,8 @@ class RoombahEnvCfg(DirectRLEnvCfg):
     sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
 
     # robot(s)
-    robot_cfg: ArticulationCfg = JETBOT_CONFIG.replace(prim_path="/World/envs/env_.*/Robot")
+    # robot_cfg: ArticulationCfg = JETBOT_CONFIG.replace(prim_path="/World/envs/env_.*/Robot")
+    robot_cfg: ArticulationCfg = TURTLEBOT4_CFG.replace(prim_path="/World/envs/env_.*/Robot")
 
     # scene
     scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=16, env_spacing=4.0, replicate_physics=True)

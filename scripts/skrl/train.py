@@ -113,6 +113,10 @@ from isaaclab_rl.skrl import SkrlVecEnvWrapper
 
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.hydra import hydra_task_config
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+import pdb
+
+print(ISAAC_NUCLEUS_DIR)
 
 # import logger
 logger = logging.getLogger(__name__)
