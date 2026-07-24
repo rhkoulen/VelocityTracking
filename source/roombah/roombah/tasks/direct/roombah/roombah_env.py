@@ -20,6 +20,7 @@ from .roombah_env_cfg import RoombahEnvCfg
 
 class RoombahEnv(DirectRLEnv):
     cfg: RoombahEnvCfg
+    MAX_SPEED = 2.0
 
     def __init__(self, cfg: RoombahEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
@@ -62,6 +63,7 @@ class RoombahEnv(DirectRLEnv):
         self.commands = torch.randn((self.cfg.scene.num_envs, 3)).cuda()
         self.commands[:,-1] = 0.0
         self.commands = self.commands/torch.linalg.norm(self.commands, dim=1, keepdim=True)
+        self.target_speeds = torch.rand((self.cfg.scene.num_envs, 1)).cuda() * self.MAX_SPEED
 
         # offsets to account for atan range and keep things on [-pi, pi]
         ratio = self.commands[:,1]/(self.commands[:,0]+1E-8)
@@ -92,16 +94,21 @@ class RoombahEnv(DirectRLEnv):
         dot = torch.sum(self.forwards * self.commands, dim=-1, keepdim=True)
         cross = torch.cross(self.forwards, self.commands, dim=-1)[:,-1].reshape(-1,1)
         forward_speed = self.robot.data.root_com_lin_vel_b[:,0].reshape(-1,1)
-        obs = torch.hstack((dot, cross, forward_speed))
+
+        obs = torch.hstack((dot, cross, forward_speed, self.target_speeds))
 
         observations = {"policy": obs}
         return observations
 
     def _get_rewards(self) -> torch.Tensor:
-        forward_reward = self.robot.data.root_com_lin_vel_b[:,0].reshape(-1,1)
-        alignment_reward = torch.sum(self.forwards * self.commands, dim=-1, keepdim=True)
-        total_reward = forward_reward*torch.exp(alignment_reward)
-        return total_reward
+        forward_speed = self.robot.data.root_com_lin_vel_b[:,0].reshape(-1,1)
+
+        obj_alignment = torch.sum(self.forwards * self.commands, dim=-1, keepdim=True)
+        alignment_reward = torch.sign(forward_speed)*torch.exp(obj_alignment - 1)
+
+        speed_error = torch.square(forward_speed - self.target_speeds)
+        speed_reward = torch.exp(-speed_error)
+        return alignment_reward + speed_reward
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
@@ -117,6 +124,7 @@ class RoombahEnv(DirectRLEnv):
         self.commands[env_ids] = torch.randn((len(env_ids), 3)).cuda()
         self.commands[env_ids,-1] = 0.0
         self.commands[env_ids] = self.commands[env_ids]/torch.linalg.norm(self.commands[env_ids], dim=1, keepdim=True)
+        self.target_speeds[env_ids] = torch.rand((len(env_ids), 1)).cuda() * self.MAX_SPEED
 
         # recalculate the orientations for the command markers with the new commands
         ratio = self.commands[env_ids][:,1]/(self.commands[env_ids][:,0]+1E-8)
